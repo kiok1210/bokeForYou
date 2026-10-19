@@ -1,0 +1,27 @@
+appId: com.bokeforyou.echopod
+productName: EchoPod
+directories:
+  buildResources: build
+  output: release
+files:
+  - out/**/*
+  - package.json
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+extraResources:
+  - from: resources/bin
+    to: bin
+    filter:
+      - '**/*'
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  artifactName: ${productName}-${version}-win-${arch}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  shortcutName: EchoPod

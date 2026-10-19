@@ -1,0 +1,159 @@
+/*
+ * 界面风格
+ *
+ * 只覆盖配色与圆角变量，不动布局与尺寸。
+ * 新增一套主题 = 在这里加一个 :root[data-theme='xxx'] 块，
+ * 并在 src/shared/types.ts 的 ThemeId 里登记，设置面板会自动出现。
+ */
+
+/* ── 黑金 Vinyl：复古唱机质感（默认） ───────────────── */
+:root[data-theme='vinyl'] {
+  --bg-0: #08080a;
+  --bg-1: #0d0d11;
+  --bg-2: #141419;
+  --text: #f3f1ec;
+  --text-dim: #9c99a5;
+  --text-mute: #67646f;
+  --gold: #e0b25c;
+  --accent-rgb: 224, 178, 92;
+  --gold-bright: #f2cd85;
+  --gold-soft: rgba(224, 178, 92, 0.13);
+  --gold-line: rgba(224, 178, 92, 0.34);
+  --glow-a: rgba(224, 178, 92, 0.09);
+  --glow-b: rgba(96, 130, 200, 0.08);
+  --radius: 14px;
+  --radius-sm: 10px;
+}
+
+/* ── 午夜蓝 Midnight：冷静、偏现代 ─────────────────── */
+:root[data-theme='midnight'] {
+  --bg-0: #060a12;
+  --bg-1: #0a111d;
+  --bg-2: #111a29;
+  --text: #eaf2ff;
+  --text-dim: #8fa3c2;
+  --text-mute: #5b6f8e;
+  --gold: #5aa9f0;
+  --accent-rgb: 90, 169, 240;
+  --gold-bright: #93cbff;
+  --gold-soft: rgba(90, 169, 240, 0.14);
+  --gold-line: rgba(90, 169, 240, 0.38);
+  --glow-a: rgba(90, 169, 240, 0.11);
+  --glow-b: rgba(126, 96, 240, 0.1);
+  --radius: 12px;
+  --radius-sm: 9px;
+}
+
+/* ── 森绿 Forest：柔和、护眼 ───────────────────────── */
+:root[data-theme='forest'] {
+  --bg-0: #070b09;
+  --bg-1: #0b120e;
+  --bg-2: #111a15;
+  --text: #eaf5ec;
+  --text-dim: #93ae9c;
+  --text-mute: #5f7a68;
+  --gold: #6fc98a;
+  --accent-rgb: 111, 201, 138;
+  --gold-bright: #a3e8b8;
+  --gold-soft: rgba(111, 201, 138, 0.14);
+  --gold-line: rgba(111, 201, 138, 0.36);
+  --glow-a: rgba(111, 201, 138, 0.1);
+  --glow-b: rgba(90, 170, 200, 0.08);
+  --radius: 16px;
+  --radius-sm: 12px;
+}
+
+/* ── 日落 Sunset：暖橙配紫，紧凑有活力 ─────────────── */
+:root[data-theme='sunset'] {
+  --bg-0: #0c0709;
+  --bg-1: #130b0f;
+  --bg-2: #1c1016;
+  --text: #fdf0ea;
+  --text-dim: #c2a09c;
+  --text-mute: #8a6a6c;
+  --gold: #f08a5d;
+  --accent-rgb: 240, 138, 93;
+  --gold-bright: #ffb489;
+  --gold-soft: rgba(240, 138, 93, 0.15);
+  --gold-line: rgba(240, 138, 93, 0.38);
+  --glow-a: rgba(240, 138, 93, 0.12);
+  --glow-b: rgba(190, 90, 200, 0.1);
+  --radius: 10px;
+  --radius-sm: 8px;
+}
+
+/* ── 字幕字号（与主题无关，单独一组变量）───────────── */
+
+:root[data-subtitle='sm'] {
+  --sub-scale: 0.88;
+}
+
+:root[data-subtitle='md'] {
+  --sub-scale: 1;
+}
+
+:root[data-subtitle='lg'] {
+  --sub-scale: 1.16;
+}
+
+:root[data-subtitle='xl'] {
+  --sub-scale: 1.34;
+}
+
+/* ── 主题选择卡片 ───────────────────────────────────── */
+
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.theme-card {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.022);
+  text-align: left;
+  transition: border-color 0.16s, background 0.16s, transform 0.16s;
+}
+
+.theme-card:hover {
+  border-color: var(--line-strong);
+  transform: translateY(-1px);
+}
+
+.theme-card[data-active='true'] {
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+
+.theme-swatch {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  border-radius: 8px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.theme-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.theme-name {
+  font-size: 12.5px;
+  color: var(--text);
+}
+
+.theme-blurb {
+  font-size: 10.5px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

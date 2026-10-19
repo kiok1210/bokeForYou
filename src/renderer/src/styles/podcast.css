@@ -1,0 +1,1451 @@
+/* ── 三栏布局：分类导航 | 内容工作区 | 播放器 ────────── */
+
+.app-body {
+  display: grid;
+  /* 播放器列随窗口宽度自适应：宽屏下不再死守 392px */
+  grid-template-columns: 236px minmax(0, 1fr) clamp(360px, 34%, 560px);
+  min-height: 0;
+}
+
+@media (max-width: 1220px) {
+  .app-body {
+    grid-template-columns: 208px minmax(0, 1fr) clamp(330px, 32%, 430px);
+  }
+}
+
+/* 窗口偏窄时先让分类导航让位，把宽度留给列表与播放器 */
+@media (max-width: 1120px) {
+  .app-body {
+    grid-template-columns: minmax(0, 1fr) clamp(330px, 40%, 460px);
+  }
+
+  .category-rail {
+    display: none;
+  }
+}
+
+/* 再窄就直接让播放器接管，等价于自动进入「放大播客主体」 */
+@media (max-width: 880px) {
+  .app-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace {
+    display: none;
+  }
+}
+
+/* ── 内容模式切换（中文播客 / 英文播客 / 长视频 / 短视频）─── */
+
+.mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.mode-chips {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.mode-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
+}
+
+.mode-chip:hover {
+  color: var(--text);
+}
+
+/* 选中态直接用该模式的主题色，切过去一眼能看出换了什么 */
+.mode-chip[data-active='true'] {
+  color: var(--mode-accent, var(--gold));
+  border-color: var(--mode-accent, var(--gold));
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.mode-meta {
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
+/* 标题栏的放大入口带文字：只放一个图标太难认了 */
+/* 选择器带上父级是为了压过后面定义的 .view-btn（它是固定 28px 的方按钮） */
+.view-controls .view-btn-labeled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: auto;
+  min-width: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex: none;
+}
+
+@media (max-width: 1240px) {
+  .view-controls .view-btn-labeled {
+    width: 28px;
+    padding: 0;
+  }
+
+  .view-controls .view-btn-labeled .view-btn-label {
+    display: none;
+  }
+}
+
+@media (max-width: 1220px) {
+  .mode-chip-label {
+    display: none;
+  }
+
+  .mode-chip {
+    padding: 5px 9px;
+  }
+}
+
+/*
+ * 视频画面：音频模式下不占布局，但**必须留在渲染树里**——
+ * 播放内核复用的就是这个元素，用 display:none 拿掉会让部分加载路径失效。
+ * 这里改成 1px 的绝对定位元素（视觉不可见、不参与布局）。
+ */
+.stage-video {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+  background: #000;
+  border-radius: 14px;
+}
+
+.stage-video[data-visible='true'] {
+  position: static;
+  width: auto;
+  height: auto;
+  opacity: 1;
+  pointer-events: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  box-shadow: 0 24px 50px -30px rgba(0, 0, 0, 0.95);
+}
+
+/* 长视频横屏：按宽度铺满 */
+.stage-video[data-frame='landscape'][data-visible='true'] {
+  width: 100%;
+  height: auto;
+  max-height: 100%;
+}
+
+/* 短视频竖屏：受高度约束，宽度按画面比例自动算 */
+.stage-video[data-frame='portrait'][data-visible='true'] {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+/* 放大播客主体时，竖屏短片也跟着长高一点 */
+.app-focus .stage-video[data-frame='portrait'][data-visible='true'] {
+  height: auto;
+  max-height: 58vh;
+}
+
+.titlebar-slogan {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--text-mute);
+  padding-left: 4px;
+  border-left: 1px solid var(--line);
+  margin-left: 2px;
+  padding-left: 12px;
+}
+
+/* ── 左侧分类导航 ───────────────────────────────────── */
+
+.category-rail {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 18px 12px 16px;
+  border-right: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.016), transparent 60%);
+}
+
+.rail-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 10px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.rail-list {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rail-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  height: 36px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: left;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.rail-item:hover {
+  background: rgba(255, 255, 255, 0.035);
+  color: var(--text);
+}
+
+.rail-item[data-active='true'] {
+  color: var(--text);
+  background: var(--panel-strong);
+  border-color: var(--line);
+}
+
+.rail-item-dot {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  opacity: 0.85;
+}
+
+.rail-item-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-item-count {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.rail-divider {
+  height: 1px;
+  margin: 8px 6px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+.rail-foot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px dashed var(--line);
+  font-size: 10.5px;
+  line-height: 1.55;
+  color: var(--text-mute);
+}
+
+/* ── 工作区补充控件 ─────────────────────────────────── */
+
+.select-mini {
+  height: 28px;
+  padding: 0 24px 0 9px;
+  font-size: 11.5px;
+  border-radius: 8px;
+  background-position: right 7px center;
+}
+
+.row-progress {
+  color: var(--gold);
+}
+
+/* 列表封面上的细进度条 */
+.cover-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3px;
+  border-radius: 0 0 0 9px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+/* 合规词表覆盖的类别 */
+.rule-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 9px;
+}
+
+.rule-chip {
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(226, 102, 95, 0.28);
+  background: rgba(226, 102, 95, 0.07);
+  font-size: 10.5px;
+  color: #e79089;
+}
+
+.settings-row-label {
+  flex: 1;
+  font-size: 12.5px;
+  color: var(--text-dim);
+}
+
+/* ── 分类看板 ───────────────────────────────────────── */
+
+.board {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.board-card {
+  padding: 14px 16px 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0.006));
+  transition: border-color 0.18s;
+}
+
+.board-card:hover {
+  border-color: var(--line-strong);
+}
+
+.board-card-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.board-accent {
+  width: 4px;
+  height: 34px;
+  flex: none;
+  border-radius: 999px;
+}
+
+.board-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.board-title {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.board-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 1px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.board-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.board-list {
+  margin-top: 11px;
+  padding-top: 9px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.board-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 9px;
+  text-align: left;
+  transition: background 0.15s;
+}
+
+.board-row:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.board-row[data-current='true'] {
+  background: linear-gradient(90deg, var(--gold-soft), transparent);
+}
+
+.board-row-cover {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border-radius: 8px;
+  overflow: hidden;
+  background-color: #17171d;
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  place-items: center;
+  color: var(--gold-bright);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+.board-row-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-row-title {
+  font-size: 12.5px;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.board-row-sub {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-mute);
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.board-more,
+.board-empty {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  margin-top: 5px;
+  padding: 8px 8px;
+  border-radius: 9px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+}
+
+.board-more:hover,
+.board-empty:hover {
+  color: var(--gold);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.board-empty {
+  margin-top: 11px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+/* ── 播放器（右侧） ─────────────────────────────────── */
+
+.player-column {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 6px 24px 18px;
+  border-right: none;
+  border-left: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.014), transparent 70%);
+}
+
+/* 封面与逐字稿共用同一块空间 */
+.stage-slot {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.stage-toggle {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(14, 14, 18, 0.82);
+  color: var(--text-dim);
+  backdrop-filter: blur(8px);
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
+}
+
+.stage-toggle:hover:not(:disabled) {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: rgba(20, 20, 26, 0.95);
+}
+
+.stage-toggle:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 舞台右上角的放大按钮：与右下角的逐字稿按钮对称，一眼能看到 */
+.stage-expand {
+  position: absolute;
+  right: 10px;
+  top: 8px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: rgba(14, 14, 18, 0.82);
+  color: var(--text-dim);
+  backdrop-filter: blur(8px);
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
+}
+
+.stage-expand:hover {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: rgba(20, 20, 26, 0.95);
+}
+
+/* 迷你模式本来就只剩播放器了，这条入口没意义 */
+.app-mini .stage-expand {
+  display: none;
+}
+
+.cover-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 10px 16px;
+}
+
+.cover-art {
+  width: 100%;
+  max-width: 296px;
+  aspect-ratio: 1 / 1;
+  border-radius: 18px;
+  object-fit: cover;
+  box-shadow: 0 30px 60px -34px rgba(0, 0, 0, 0.95), inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  transition: box-shadow 0.4s ease;
+}
+
+.cover-art-empty {
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed var(--line);
+  color: var(--text-mute);
+}
+
+.cover-stage[data-playing='true'] .cover-art {
+  box-shadow: 0 0 0 1px var(--gold-line), 0 34px 70px -34px rgba(var(--accent-rgb), 0.55);
+}
+
+/* 播放时封面外圈的呼吸光 */
+.cover-pulse {
+  position: absolute;
+  inset: 10px 16px;
+  border-radius: 22px;
+  pointer-events: none;
+  box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.22);
+  animation: cover-breathe 3.6s ease-in-out infinite;
+}
+
+@keyframes cover-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.995);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.012);
+  }
+}
+
+/* 正在播放信息 */
+.now-playing {
+  margin-top: 14px;
+  text-align: center;
+}
+
+.now-playing-empty {
+  opacity: 0.7;
+}
+
+.now-playing-title {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.now-playing-artist {
+  margin-top: 3px;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 字幕预览行 */
+.lyric-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 100%;
+  margin-top: 8px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  border: 1px dashed transparent;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.lyric-preview:hover:not(:disabled) {
+  border-color: var(--line);
+  background: rgba(255, 255, 255, 0.022);
+}
+
+.lyric-preview:disabled {
+  cursor: default;
+}
+
+.lyric-preview-text {
+  max-width: 100%;
+  font-size: calc(12.5px * var(--sub-scale));
+  color: var(--gold-bright);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lyric-preview-trans {
+  max-width: 100%;
+  font-size: calc(11px * var(--sub-scale));
+  color: var(--text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lyric-preview-empty {
+  font-size: 11.5px;
+  color: var(--text-mute);
+}
+
+/* ── 走带控制 ───────────────────────────────────────── */
+
+.transport {
+  margin-top: 14px;
+}
+
+.transport-time {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--text-mute);
+  font-variant-numeric: tabular-nums;
+}
+
+.speed-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--text-mute);
+}
+
+.speed-tag[data-playing='true'] {
+  border-color: var(--gold-line);
+  color: var(--gold);
+}
+
+.transport-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.transport-controls .icon-btn {
+  width: 36px;
+  height: 36px;
+}
+
+.play-button {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(180deg, var(--gold-bright), var(--gold));
+  color: #241a06;
+  box-shadow: 0 12px 30px -14px rgba(var(--accent-rgb), 0.95);
+  transition: transform 0.16s, filter 0.16s;
+}
+
+.play-button:hover:not(:disabled) {
+  transform: scale(1.04);
+  filter: brightness(1.06);
+}
+
+.play-button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.skip-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+
+.skip-btn::after {
+  content: 's';
+  font-size: 8px;
+  margin-left: 1px;
+  opacity: 0.6;
+}
+
+.skip-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--panel-strong);
+}
+
+.skip-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+/* 睡眠定时 + 倍速 */
+.transport-extra {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 12px;
+}
+
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.pill-btn:hover:not(:disabled) {
+  color: var(--text);
+  border-color: var(--line-strong);
+  background: var(--panel-strong);
+}
+
+.pill-btn[data-active='true'] {
+  color: var(--gold);
+  border-color: var(--gold-line);
+}
+
+.pill-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pill-value {
+  min-width: 40px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.sleep-menu {
+  position: absolute;
+  bottom: 36px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  width: 168px;
+  padding: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--line-strong);
+  background: rgba(18, 18, 23, 0.98);
+  box-shadow: 0 24px 50px -22px rgba(0, 0, 0, 0.95);
+  animation: panel-in 0.18s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.sleep-menu-title {
+  padding: 2px 8px 6px;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.sleep-option {
+  display: block;
+  width: 100%;
+  padding: 6px 9px;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  text-align: left;
+  transition: background 0.14s, color 0.14s;
+}
+
+.sleep-option:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.volume-row .icon-btn {
+  width: 30px;
+  height: 30px;
+}
+
+/* ── 分类聚焦：搜索热门 + 精选节目 ─────────────────── */
+
+.spotlight {
+  margin-bottom: 14px;
+  padding: 16px 18px;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.008));
+}
+
+.spotlight-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spotlight-accent {
+  width: 4px;
+  height: 40px;
+  flex: none;
+  border-radius: 999px;
+}
+
+.spotlight-title-wrap {
+  flex: 1;
+  min-width: 0;
+}
+
+.spotlight-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.spotlight-blurb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.spotlight-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+}
+
+.spotlight-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 10px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+.spotlight-hint {
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.85;
+}
+
+.spotlight-empty {
+  padding: 10px 0 4px;
+  font-size: 12px;
+  color: var(--text-mute);
+}
+
+.show-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(196px, 1fr));
+  gap: 8px;
+}
+
+.show-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.022);
+  text-align: left;
+  transition: border-color 0.16s, background 0.16s, transform 0.16s;
+}
+
+.show-card:hover {
+  border-color: var(--gold-line);
+  background: rgba(var(--accent-rgb), 0.06);
+  transform: translateY(-1px);
+}
+
+.show-name {
+  padding-right: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.show-blurb {
+  font-size: 11px;
+  color: var(--text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.show-go {
+  position: absolute;
+  top: 9px;
+  right: 9px;
+  color: var(--text-mute);
+  opacity: 0;
+  transition: opacity 0.16s, color 0.16s;
+}
+
+.show-card:hover .show-go {
+  opacity: 1;
+  color: var(--gold);
+}
+
+/* 分类看板空态里的节目 chips */
+.board-empty-block {
+  margin-top: 11px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+}
+
+.board-empty-block .board-empty {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.board-shows {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.board-shows-label {
+  font-size: 11px;
+  color: var(--text-mute);
+}
+
+.show-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 11.5px;
+  color: var(--text-dim);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.show-chip:hover {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+
+/* ── 工具条防挤压：窗口偏窄时文字不许竖排 ─────────── */
+
+.tabs {
+  flex: none;
+}
+
+.tab {
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.btn,
+.chip,
+.meta-text,
+.list-toolbar-text,
+.queue-status,
+.badge,
+.row-topic {
+  white-space: nowrap;
+}
+
+.toolbar-row {
+  min-width: 0;
+}
+
+/* 「整理中」这类带图标的标签 */
+.queue-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 窗口变窄时先让统计文字让位，保证标签完整可读 */
+@media (max-width: 1360px) {
+  .meta-text {
+    display: none;
+  }
+}
+
+@media (max-width: 1180px) {
+  .titlebar-slogan {
+    display: none;
+  }
+}
+
+/* ── 我的源 ─────────────────────────────────────────── */
+
+/* 分类多了以后让整列自己滚动，而不是把「我的源」挤出可视区 */
+.category-rail {
+  overflow-y: auto;
+}
+
+.rail-list {
+  flex: none;
+  overflow: visible;
+}
+
+.rail-head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 6px;
+}
+
+.rail-add {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.rail-add:hover {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+
+.rail-sources {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.rail-source {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.rail-source:hover {
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.rail-source[data-active='true'] {
+  background: var(--panel-strong);
+  border-color: var(--line);
+}
+
+.rail-source-main {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 4px 0 10px;
+  font-size: 12.5px;
+  color: var(--text-dim);
+  text-align: left;
+}
+
+.rail-source[data-active='true'] .rail-source-main {
+  color: var(--text);
+}
+
+.rail-kind {
+  flex: none;
+  padding: 0 5px;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  font-size: 10px;
+  color: var(--text-mute);
+}
+
+.rail-remove {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 4px;
+  flex: none;
+  border-radius: 6px;
+  color: var(--text-mute);
+  font-size: 15px;
+  line-height: 1;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s, background 0.15s;
+}
+
+.rail-source:hover .rail-remove {
+  opacity: 1;
+}
+
+.rail-remove:hover {
+  color: var(--danger);
+  background: rgba(226, 102, 95, 0.12);
+}
+
+.rail-empty {
+  padding: 6px 10px 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+/* ── 源的表单 ───────────────────────────────────────── */
+
+.source-form {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 301;
+  width: 404px;
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid var(--line-strong);
+  background: rgba(16, 16, 21, 0.985);
+  box-shadow: 0 34px 70px -26px rgba(0, 0, 0, 0.95);
+  animation: panel-in 0.2s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+/* ── 形态按钮：全屏 / 正常 / 迷你 / 托盘 / 置顶 ────── */
+
+.view-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+  padding-left: 8px;
+  border-left: 1px solid var(--line);
+  -webkit-app-region: no-drag;
+}
+
+.view-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  transition: color 0.15s, background 0.15s;
+}
+
+.view-btn:hover {
+  color: var(--text);
+  background: var(--panel-strong);
+}
+
+.view-btn[data-active='true'] {
+  color: var(--gold);
+  background: var(--gold-soft);
+}
+
+/* ── 迷你模式：只留播放器 ───────────────────────────── */
+
+.app-mini .app-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-mini .category-rail,
+.app-mini .workspace {
+  display: none;
+}
+
+.app-mini .player-column {
+  border-left: none;
+  padding: 2px 16px 14px;
+}
+
+/* 迷你窗宽度有限，全屏按钮先让位（此时全屏也没意义） */
+.app-mini .view-controls .view-btn:first-child {
+  display: none;
+}
+
+.app-mini .titlebar {
+  padding-left: 12px;
+}
+
+.app-mini .cover-stage {
+  padding: 6px 8px;
+}
+
+.app-mini .cover-art {
+  max-width: 196px;
+  border-radius: 14px;
+}
+
+.app-mini .now-playing {
+  margin-top: 10px;
+}
+
+.app-mini .now-playing-title {
+  font-size: 13px;
+}
+
+.app-mini .transport {
+  margin-top: 10px;
+}
+
+.app-mini .transport-controls {
+  gap: 6px;
+}
+
+.app-mini .sleep-menu {
+  bottom: 34px;
+}
+
+.app-mini .volume-row {
+  margin-top: 8px;
+  padding-top: 8px;
+}
+
+/* ── 放大播客主体：左右两栏让位，播放器占满内容区 ─── */
+
+.app-focus .app-body {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.app-focus .category-rail,
+.app-focus .workspace {
+  display: none;
+}
+
+.app-focus .player-column {
+  border-left: none;
+  align-items: center;
+  padding: 8px 36px 28px;
+}
+
+/* 内部各块统一限宽并居中，大屏上才不会被拉变形 */
+.app-focus .player-column > * {
+  width: 100%;
+  max-width: 680px;
+}
+
+.app-focus .stage-slot {
+  margin-top: 0;
+}
+
+.app-focus .cover-stage {
+  padding: 6px 0;
+}
+
+.app-focus .cover-art {
+  max-width: min(430px, 44vh);
+  border-radius: 22px;
+}
+
+.app-focus .cover-pulse {
+  inset: 6px 0;
+  border-radius: 26px;
+}
+
+.app-focus .now-playing {
+  margin-top: 18px;
+}
+
+.app-focus .now-playing-title {
+  font-size: 17px;
+}
+
+.app-focus .now-playing-artist {
+  font-size: 12.5px;
+}
+
+.app-focus .lyric-preview-text {
+  font-size: calc(14px * var(--sub-scale));
+}
+
+.app-focus .lyric-preview-trans {
+  font-size: calc(12px * var(--sub-scale));
+}
+
+.app-focus .transcript-text {
+  font-size: calc(14.5px * var(--sub-scale));
+}
+
+.app-focus .transcript-translation {
+  font-size: calc(12.5px * var(--sub-scale));
+}
+
+.app-focus .transport {
+  margin-top: 18px;
+}
+
+/* 放大状态下顶部的「收起」入口 */
+.focus-exit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  flex: none;
+  margin: 2px 0 6px;
+  padding: 5px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--text-dim);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.focus-exit:hover {
+  color: var(--gold);
+  border-color: var(--gold-line);
+  background: var(--gold-soft);
+}
+
+/* 放大态下播放器内部元素统一限宽，但这颗按钮要保持自身宽度 */
+.app-focus .focus-exit {
+  width: auto;
+  max-width: none;
+}
+
+/* 迷你模式已经只留播放器了，不需要这条 */
+.app-mini .focus-exit {
+  display: none;
+}
