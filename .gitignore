@@ -8,6 +8,9 @@ release-app/
 .DS_Store
 .vite/
 
+# 开发期的临时脚本
+.tmp-*
+
 # 打包用的二进制：体积上百 MB，各有公开发布渠道，不进版本库
 resources/bin/*.exe
 resources/bin/ffmpeg
